@@ -10,6 +10,7 @@ contract Fundraising {
         uint deadline;                     // Deadline as a UNIX timestamp
         uint amountRaised;                // Total amount raised by donations
         bool withdrawn;                    // Indicates whether funds have already been withdrawn
+        bool cancelled;
         mapping(address => uint) donations; // Tracks donation amount per donor
     }
 
@@ -22,6 +23,7 @@ contract Fundraising {
     event FundsWithdrawn(uint indexed campaignId, uint amount);
     event DonationRefunded(address indexed donor, uint indexed campaignId, uint amount);
     event DeadlineExtended(uint indexed campaignId, uint newDeadline);
+    event CampaignCancelled(uint indexed campaignId, uint timestamp);
  
     // Modifier: Checks if the campaign exists
     modifier campaignExists(uint _campaignId) {
@@ -44,6 +46,11 @@ contract Fundraising {
     // Modifier: Ensures function is called after campaign deadline
     modifier afterDeadline(uint _campaignId) {
         require(block.timestamp >= campaigns[_campaignId].deadline, "Campaign still ongoing.");
+        _;
+    }
+
+    modifier notCancelled(uint _campaignId) {
+        require(!campaigns[_campaignId].cancelled, "Campaign has been cancelled.");
         _;
     }
 
@@ -110,6 +117,31 @@ contract Fundraising {
         c.deadline += _additionalDays * 1 days;
 
         emit DeadlineExtended(_campaignId, c.deadline);
+    }
+
+    function cancelCampaign(uint _campaignId) external campaignExists(_campaignId) onlyOwner(_campaignId) beforeDeadline(_campaignId) notCancelled(_campaignId) {
+        Campaign storage c = campaigns[_campaignId];
+        
+        require(!c.withdrawn, "Funds already withdrawn.");
+        require(c.amountRaised <= c.goal, "Cannot cancel a campaign that has reached its goal.");
+        
+        c.cancelled = true;
+        
+        emit CampaignCancelled(_campaignId, block.timestamp);
+    }
+
+        function refundFromCanceled(uint _campaignId) external campaignExists(_campaignId) {
+        Campaign storage c = campaigns[_campaignId];
+        
+        require(c.cancelled, "Campaign is not canceled.");
+        
+        uint donatedAmount = c.donations[msg.sender];
+        require(donatedAmount > 0, "No donations to refund.");
+        
+        c.donations[msg.sender] = 0;                          
+        payable(msg.sender).transfer(donatedAmount);         
+        
+        emit DonationRefunded(msg.sender, _campaignId, donatedAmount);
     }
 
     // Public getter for campaign data (for frontend or transparency)
