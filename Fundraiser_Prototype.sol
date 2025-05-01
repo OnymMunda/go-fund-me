@@ -21,7 +21,8 @@ contract Fundraising {
     event DonationReceived(address indexed donor, uint indexed campaignId, uint amount);
     event FundsWithdrawn(uint indexed campaignId, uint amount);
     event DonationRefunded(address indexed donor, uint indexed campaignId, uint amount);
-
+    event DeadlineExtended(uint indexed campaignId, uint newDeadline);
+ 
     // Modifier: Checks if the campaign exists
     modifier campaignExists(uint _campaignId) {
         require(_campaignId < campaignCount, "Campaign does not exist.");
@@ -100,6 +101,15 @@ contract Fundraising {
         payable(msg.sender).transfer(donatedAmount);          // Refund donation
 
         emit DonationRefunded(msg.sender, _campaignId, donatedAmount); // Log refund
+    }
+
+    function extendDeadline(uint _campaignId, uint _additionalDays) external campaignExists(_campaignId) onlyOwner(_campaignId) beforeDeadline(_campaignId) {
+        require(_additionalDays > 0, "Must extend by at least 1 day");
+
+        Campaign storage c = campaigns[_campaignId];
+        c.deadline += _additionalDays * 1 days;
+
+        emit DeadlineExtended(_campaignId, c.deadline);
     }
 
     // Public getter for campaign data (for frontend or transparency)
