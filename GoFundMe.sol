@@ -130,7 +130,7 @@ contract Fundraising {
         emit CampaignCancelled(_campaignId, block.timestamp);
     }
 
-    function refundFromCanceled(uint _campaignId) external campaignExists(_campaignId) {
+    function refundFromCancelled(uint _campaignId) external campaignExists(_campaignId) {
         Campaign storage c = campaigns[_campaignId];
         require(c.cancelled, "Campaign is not canceled.");
         
