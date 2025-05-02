@@ -130,9 +130,8 @@ contract Fundraising {
         emit CampaignCancelled(_campaignId, block.timestamp);
     }
 
-        function refundFromCanceled(uint _campaignId) external campaignExists(_campaignId) {
+    function refundFromCanceled(uint _campaignId) external campaignExists(_campaignId) {
         Campaign storage c = campaigns[_campaignId];
-        
         require(c.cancelled, "Campaign is not canceled.");
         
         uint donatedAmount = c.donations[msg.sender];
@@ -140,7 +139,6 @@ contract Fundraising {
         
         c.donations[msg.sender] = 0;                          
         payable(msg.sender).transfer(donatedAmount);         
-        
         emit DonationRefunded(msg.sender, _campaignId, donatedAmount);
     }
 
@@ -150,9 +148,10 @@ contract Fundraising {
         uint goal,
         uint deadline,
         uint amountRaised,
-        bool withdrawn
+        bool withdrawn,
+        bool cancelled
     ) {
         Campaign storage c = campaigns[_campaignId];
-        return (c.owner, c.goal, c.deadline, c.amountRaised, c.withdrawn);
+        return (c.owner, c.goal, c.deadline, c.amountRaised, c.withdrawn, c.cancelled);
     }
 }
